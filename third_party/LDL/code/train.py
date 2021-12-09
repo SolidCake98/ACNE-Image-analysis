@@ -22,16 +22,15 @@ import time
 import warnings
 warnings.filterwarnings("ignore")
 import os
-os.environ["CUDA_VISIBLE_DEVICES"] = "1"
 
 
 # Hyper Parameters
 BATCH_SIZE = 32
 BATCH_SIZE_TEST = 20
 LR = 0.001              # learning rate
-NUM_WORKERS = 12
+NUM_WORKERS = 4
 NUM_CLASSES = 4
-LOG_FILE_NAME = './logs/log_' + time.strftime("%Y-%m-%d_%H:%M:%S", time.localtime()) + '.log'
+LOG_FILE_NAME = './logs/log_' + time.strftime("%Y-%m-%d_%H_%M_%S", time.localtime()) + '.log'
 lr_steps = [30, 60, 90, 120]
 
 np.random.seed(42)
@@ -169,7 +168,7 @@ def trainval_test(cross_val_index, sigma, lam):
         # print(message)
         log.write(message)
         # '''
-        if epoch >= 9:
+        if epoch >= 1:
             with torch.no_grad():
                 test_loss = 0
                 test_corrects = 0
@@ -224,9 +223,9 @@ def trainval_test(cross_val_index, sigma, lam):
                     log.write(str(pre_se_sp_yi_report_m) + '\n')
                     log.write(str(mae_mse_report) + '\n')
 
-
-cross_val_lists = ['0', '1', '2', '3', '4']
-for cross_val_index in cross_val_lists:
-    log.write('\n\ncross_val_index: ' + cross_val_index + '\n\n')
-    if True:
-        trainval_test(cross_val_index, sigma=30 * 0.1, lam=6 * 0.1)
+if __name__ == "__main__":
+    cross_val_lists = ['0', '1', '2', '3', '4']
+    for cross_val_index in cross_val_lists:
+        log.write('\n\ncross_val_index: ' + cross_val_index + '\n\n')
+        if True:
+            trainval_test(cross_val_index, sigma=30 * 0.1, lam=6 * 0.1)

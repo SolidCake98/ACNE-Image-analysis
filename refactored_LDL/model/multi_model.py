@@ -84,9 +84,8 @@ class LDLModel(pl.LightningModule):
 
     def training_step(self, train_batch, idx):
         x, y, l = train_batch
-        x = x.to(device=self.device)
 
-        l = l.numpy()
+        l = l.cpu().numpy()
         l -= 1
         ld = genLD(l, 3, 'klloss', 65)
         ld_4 = np.vstack((np.sum(ld[:, :5], 1), np.sum(ld[:, 5:20], 1), np.sum(ld[:, 20:50], 1), np.sum(ld[:, 50:], 1))).transpose()
@@ -96,8 +95,19 @@ class LDLModel(pl.LightningModule):
 
         preds = self.multitask_model(x)
         loss = self.loss(preds, ld_4, ld, ld_4)
+        self.log('train_loss', loss, on_epoch=True, prog_bar=True)
 
         return loss
+
+    def validation_step(self, val_batch, batch_idx):
+        x, y, l = val_batch
+        preds = self.multitask_model(x)
+
+        loss_f = torch.nn.CrossEntropyLoss()
+        loss = loss_f(preds[2], y.long())
+        self.log('valid_class_loss', loss, on_epoch=True, prog_bar=True)
+        return loss
+
 
     def backward(self, loss, optimizer, idx):
         loss.backward()

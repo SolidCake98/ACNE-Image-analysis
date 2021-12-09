@@ -1,6 +1,7 @@
 import sys
 from torch.nn import init
 import torch.nn as nn
+import os
 
 
 # evaluate meters
@@ -30,6 +31,7 @@ class Logger(object):
 
     def open(self, file, mode=None):
         if mode is None: mode ='w'
+        list = os.listdir()
         self.file = open(file, mode)
 
     def write(self, message, is_terminal=1, is_file=1 ):
