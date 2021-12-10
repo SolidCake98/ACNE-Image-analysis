@@ -1,11 +1,12 @@
 from torch import nn
 import torch
-from torch._C import device
-import torchvision
 import pytorch_lightning as pl
 from refactored_LDL.losses.KLDivLoss import KLDivLoss
 from refactored_LDL.dataset.LDLTransform import genLD
 import numpy as np
+from torch.optim.lr_scheduler import StepLR
+from torchmetrics import Accuracy, Precision, Specificity, MeanSquaredError, MeanAbsoluteError
+
 
 class MultitaskModel(nn.Module):
 
@@ -68,6 +69,12 @@ class LDLModel(pl.LightningModule):
         self.LR = 0.001
         self.multitask_model = MultitaskModel(backbone)
         self.loss = MultiTaskLossWrapper(task_num=3)
+        
+        self.accuracy = Accuracy()
+        self.precision = Precision()
+        self.sensetivity = Specificity()
+        self.mse = MeanSquaredError()
+        self.mae = MeanAbsoluteError
 
     def forward(self, x):
         x = self.multitask_model(x)
@@ -80,11 +87,12 @@ class LDLModel(pl.LightningModule):
                 params += [{'params': [value], 'lr': self.LR * 1.0, 'weight_decay': 5e-4}]
 
         optimizer = torch.optim.SGD(params, momentum=0.9)
-        return optimizer
+        lr_scheduler = StepLR(optimizer, 5, 0.5)
+
+        return {'optimizer': optimizer, 'lr_scheduler': lr_scheduler}
 
     def training_step(self, train_batch, idx):
-        x, y, l = train_batch
-
+        x, y, l = train_batch   
         l = l.cpu().numpy()
         l -= 1
         ld = genLD(l, 3, 'klloss', 65)
@@ -95,9 +103,21 @@ class LDLModel(pl.LightningModule):
 
         preds = self.multitask_model(x)
         loss = self.loss(preds, ld_4, ld, ld_4)
+
+
+        if self.trainer.is_last_batch:
+            sch = self.lr_schedulers()
+            sch.step()
+
         self.log('train_loss', loss, on_epoch=True, prog_bar=True)
+        
+        mean_accuracy = self.accuracy(preds[0], l).compute()
+        self.log('train_step_accuracy', mean_accuracy)
 
         return loss
+
+    def training_epoch_end(self, outputs) -> None:
+        return super().training_epoch_end(outputs)
 
     def validation_step(self, val_batch, batch_idx):
         x, y, l = val_batch
@@ -106,8 +126,9 @@ class LDLModel(pl.LightningModule):
         loss_f = torch.nn.CrossEntropyLoss()
         loss = loss_f(preds[2], y.long())
         self.log('valid_class_loss', loss, on_epoch=True, prog_bar=True)
-        return loss
 
+
+        return loss
 
     def backward(self, loss, optimizer, idx):
         loss.backward()

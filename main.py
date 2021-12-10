@@ -3,6 +3,8 @@ import torchvision
 from torchvision import transforms
 from torch.utils.data import DataLoader
 import pytorch_lightning as pl
+from pytorch_lightning.loggers import WandbLogger
+
 
 from refactored_LDL.model.multi_model import LDLModel
 from refactored_LDL.dataset.dataset_processing import DatasetProcessing
@@ -60,5 +62,7 @@ if __name__ == "__main__":
                             num_workers=NUM_WORKERS,
                             pin_memory=True)
 
-    trainer = pl.Trainer(gpus=1, max_epochs=10, log_every_n_steps=36)
+    wandb_logger = WandbLogger(name="SGD Resnet 0.001", project="OpenFace")
+
+    trainer = pl.Trainer(accelerator="cpu", max_epochs=10, log_every_n_steps=36, logger=wandb_logger)
     trainer.fit(model, train_loader, test_loader)
