@@ -10,14 +10,14 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torchvision import transforms
 from torch.utils.data import DataLoader
-from dataset import dataset_processing
+from .dataset import dataset_processing
 from timeit import default_timer as timer
-from utils.report import report_precision_se_sp_yi, report_mae_mse
-from utils.utils import Logger, AverageMeter, time_to_str, weights_init
-from utils.genLD import genLD
-from model.resnet50 import resnet50
+from .utils.report import report_precision_se_sp_yi, report_mae_mse
+from .utils.utils import Logger, AverageMeter, time_to_str, weights_init
+from .utils.genLD import genLD
+from .model.resnet50 import resnet50
 import torch.backends.cudnn as cudnn
-from transforms.affine_transforms import *
+from .transforms.affine_transforms import *
 import time
 import warnings
 warnings.filterwarnings("ignore")
@@ -31,7 +31,7 @@ LR = 0.001              # learning rate
 NUM_WORKERS = 4
 NUM_CLASSES = 4
 LOG_FILE_NAME = './logs/log_' + time.strftime("%Y-%m-%d_%H_%M_%S", time.localtime()) + '.log'
-lr_steps = [30, 60, 90, 120]
+lr_steps = [30, 60, 90, 10]
 
 np.random.seed(42)
 
@@ -168,7 +168,7 @@ def trainval_test(cross_val_index, sigma, lam):
         # print(message)
         log.write(message)
         # '''
-        if epoch >= 1:
+        if epoch >= 0:
             with torch.no_grad():
                 test_loss = 0
                 test_corrects = 0
@@ -190,7 +190,7 @@ def trainval_test(cross_val_index, sigma, lam):
 
                     cls, cou, cou2cls = cnn(test_x, None)
 
-                    loss = loss_func(cou2cls, test_y)
+                    loss = loss_func(cou2cls, test_y.long())
                     test_loss += loss.data
 
                     _, preds_m = torch.max(cls + cou2cls, 1)
@@ -222,9 +222,10 @@ def trainval_test(cross_val_index, sigma, lam):
                     log.write(str(pre_se_sp_yi_report) + '\n')
                     log.write(str(pre_se_sp_yi_report_m) + '\n')
                     log.write(str(mae_mse_report) + '\n')
+    return cnn
 
 if __name__ == "__main__":
-    cross_val_lists = ['0', '1', '2', '3', '4']
+    cross_val_lists = ['0']
     for cross_val_index in cross_val_lists:
         log.write('\n\ncross_val_index: ' + cross_val_index + '\n\n')
         if True:

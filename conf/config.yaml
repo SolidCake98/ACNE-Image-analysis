@@ -1,0 +1,26 @@
+dataset_local_train:
+  data_path: ../Classification/JPEGImages
+  data_file: ../Classification/NNEW_trainval_0.txt
+  batch_size: 32
+  num_workers: 4
+
+dataset_local_test:
+  data_path: ../Classification/JPEGImages
+  data_file: ../Classification/NNEW_test_0.txt
+  batch_size: 32
+  num_workers: 4
+
+optimizer:
+  LR: 0.001
+  type: sgd
+  
+backbone:
+  name: 'swin_tiny'
+
+logger:
+  name: SGD SWIN Densed distribution 0.001
+  project: OpenFace
+
+trainer:
+  max_epochs: 20
+  log_every_n_steps: 3

@@ -1,68 +1,28 @@
-import torch
-import torchvision
-from torchvision import transforms
-from torch.utils.data import DataLoader
-import pytorch_lightning as pl
-from pytorch_lightning.loggers import WandbLogger
+from omegaconf.dictconfig import DictConfig
+from LDL import factory
+import hydra
+from hydra.utils import to_absolute_path
 
 
-from refactored_LDL.model.multi_model import LDLModel
-from refactored_LDL.dataset.dataset_processing import DatasetProcessing
+@hydra.main(config_path="conf", config_name="config")
+def train(cfg: DictConfig):
+
+    cfg['dataset_local_train']['data_path'] = to_absolute_path(cfg['dataset_local_train']['data_path'])
+    cfg['dataset_local_train']['data_file'] = to_absolute_path(cfg['dataset_local_train']['data_file'])
+
+    cfg['dataset_local_test']['data_path'] = to_absolute_path(cfg['dataset_local_test']['data_path'])
+    cfg['dataset_local_test']['data_file'] = to_absolute_path(cfg['dataset_local_test']['data_file'])
+
+    trainer, model, train_loader, test_loader = factory.get_trainer(
+        cfg['backbone']['name'],
+        cfg['dataset_local_train'],
+        cfg['dataset_local_test'],
+        cfg['logger'],
+        cfg['trainer']
+    )
+
+    trainer.fit(model, train_loader, test_loader)
+
 
 if __name__ == "__main__":
-    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-    print(torch.cuda.is_available())
-    backbone = torchvision.models.resnet50()
-    model = LDLModel(backbone, device)
-
-    BATCH_SIZE = 32
-    NUM_WORKERS = 4
-
-    DATA_PATH = '../Classification/JPEGImages'
-    TRAIN_FILE = '../Classification/NNEW_trainval_' + str(0) + '.txt'
-    TEST_FILE = '../Classification/NNEW_test_' + str(0) + '.txt'
-
-    normalize = transforms.Normalize(mean=[0.45815152, 0.361242, 0.29348266],
-                                     std=[0.2814769, 0.226306, 0.20132513])
-
-    dset_train = DatasetProcessing(
-        DATA_PATH, 
-        TRAIN_FILE, 
-        transform=transforms.Compose([
-                transforms.Scale((256, 256)),
-                transforms.RandomCrop(224),
-                transforms.RandomHorizontalFlip(),
-                transforms.ToTensor(),
-                normalize,
-            ])
-    )
-
-    dset_test = DatasetProcessing(
-        DATA_PATH, 
-        TEST_FILE, 
-        transform=transforms.Compose([
-                transforms.Scale((256, 256)),
-                transforms.RandomCrop(224),
-                transforms.RandomHorizontalFlip(),
-                transforms.ToTensor(),
-                normalize,
-            ])
-    )
-
-    train_loader = DataLoader(dset_train,
-                              batch_size=BATCH_SIZE,
-                              shuffle=True,
-                              num_workers=NUM_WORKERS,
-                              pin_memory=True)
-
-
-    test_loader = DataLoader(dset_test,
-                            batch_size=BATCH_SIZE,
-
-                            num_workers=NUM_WORKERS,
-                            pin_memory=True)
-
-    wandb_logger = WandbLogger(name="SGD Resnet 0.001", project="OpenFace")
-
-    trainer = pl.Trainer(accelerator="cpu", max_epochs=10, log_every_n_steps=36, logger=wandb_logger)
-    trainer.fit(model, train_loader, test_loader)
+    train()

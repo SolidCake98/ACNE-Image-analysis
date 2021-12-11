@@ -1,0 +1,3 @@
+model:
+  checkpoint: ./checkpoints/swin_t/swin_tiny-epoch=18-valid_loss=0.97.ckpt
+  backbone: 'swin_tiny'
