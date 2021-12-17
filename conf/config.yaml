@@ -19,7 +19,7 @@ backbone:
 
 logger:
   name: SGD SWIN Densed distribution 0.001
-  project: OpenFace
+  project: ImageAcneAnalysis
 
 trainer:
   max_epochs: 20

@@ -2,7 +2,7 @@ venv
 logs
 __pycache__
 lightning_logs
-OpenFace
+ImageAcneAnalysis
 wandb
 outputs
 checkpoints
